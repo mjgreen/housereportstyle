@@ -8,7 +8,7 @@ format:
     toc: true
     toc-title: "Contents"
     toc-depth: 3
-    toc-location: left
+    toc-location: right
     number-sections: true
     number-depth: 3
     theme:
@@ -65,17 +65,17 @@ scanpath_manifest <- tibble(
 )
 ```
 
-```{r scanpath_manifest_table}
+```{r tbl-scanpath-manifest}
+#| tbl-cap: "*Scanpath representation manifest*"
 #| dependson: scanpath_inputs_model
 reader_table(
   scanpath_manifest,
-  label = "Table 1",
-  title = "Scanpath representation manifest",
   note = "The manifest records preprocessing and ScaSim settings before clustering."
 )
 ```
 
-Table 1 should let the reader see exactly what is being treated as a scanpath.
+@tbl-scanpath-manifest should let the reader see exactly what is being treated
+as a scanpath.
 
 ## MDS And Clustering
 

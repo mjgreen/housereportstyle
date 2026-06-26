@@ -16,8 +16,11 @@ Recommended sequence:
 3. Retain later revisits.
 4. Compute inter-visit durations.
 5. Compute ScaSim distances with documented normalization and geometry settings.
-   The scanpath sequence output should contain `geometry_*` columns and the
-   manifest should record the detected row/column bounds.
+   Cite Titus von der Malsburg's `scanpath` package
+   (<https://github.com/tmalsburg/scanpath>) and the underlying
+   von der Malsburg & Vasishth (2011) method when reporting this step. The
+   scanpath sequence output should contain `geometry_*` columns and the manifest
+   should record the detected row/column bounds.
 6. Audit the distance matrix before modelling.
 7. Fit lower-dimensional maps for 2-10 dimensions using `MASS::isoMDS`.
 8. Fit `Mclust` at each dimensionality over the report-specified `G` range.

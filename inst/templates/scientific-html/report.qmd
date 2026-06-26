@@ -7,7 +7,7 @@ format:
     toc: true
     toc-title: "Contents"
     toc-depth: 3
-    toc-location: left
+    toc-location: right
     number-sections: true
     number-depth: 3
     theme:
@@ -62,17 +62,17 @@ example_data <- tibble(
 )
 ```
 
-```{r data_input_table}
+```{r tbl-data-input}
+#| tbl-cap: "*Example data scaffold*"
 #| dependson: data_inputs_model
 reader_table(
   example_data,
-  label = "Table 1",
-  title = "Example data scaffold",
   note = "Replace this scaffold table with the first reader-facing data provenance table."
 )
 ```
 
-Table 1 should explain what the reader needs to know before the first plot or model.
+@tbl-data-input should explain what the reader needs to know before the first
+plot or model.
 
 ```{r fig-example-summary}
 #| fig-width: 7

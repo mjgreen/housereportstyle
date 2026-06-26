@@ -17,3 +17,10 @@ test_that("reader_table returns a gt table", {
   expect_s3_class(table, "gt_tbl")
 })
 
+test_that("reader_table can defer numbering and captions to Quarto", {
+  table <- reader_table(
+    tibble::tibble(value = 1.25, p_value = 0.02),
+    note = "Example note."
+  )
+  expect_s3_class(table, "gt_tbl")
+})

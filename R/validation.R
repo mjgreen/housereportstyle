@@ -30,6 +30,18 @@ line_in_code_chunk <- function(index, chunks) {
   any(index >= chunks$start & index <= chunks$end)
 }
 
+chunk_index_for_line <- function(index, chunks) {
+  if (nrow(chunks) == 0) {
+    return(NA_integer_)
+  }
+  matches <- which(index >= chunks$start & index <= chunks$end)
+  if (length(matches) == 0) {
+    NA_integer_
+  } else {
+    matches[[1]]
+  }
+}
+
 has_aside_after_chunk <- function(lines, chunk_end, lookahead = 12) {
   if (chunk_end >= length(lines)) {
     return(FALSE)
@@ -86,14 +98,24 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
 
   figure_chunks <- chunks |>
     dplyr::filter(grepl("^fig-", .data$label))
+  table_chunks <- chunks |>
+    dplyr::filter(grepl("^tbl-", .data$label))
   model_chunks <- chunks |>
     dplyr::filter(grepl("(_model$|_model_)", .data$label))
   display_chunks <- chunks |>
-    dplyr::filter(grepl("(^fig-|table|tables)", .data$label))
+    dplyr::filter(grepl("(^fig-|^tbl-|table|tables)", .data$label))
 
-  hardcoded_figure_lines <- which(grepl("\\bFigure\\s+[0-9]+\\b", lines))
-  hardcoded_figure_lines <- hardcoded_figure_lines[
-    !vapply(hardcoded_figure_lines, line_in_code_chunk, logical(1), chunks = chunks)
+  hardcoded_object_reference_lines <- which(grepl("\\b(Table|Figure)\\s+[0-9]+\\b", lines))
+  hardcoded_object_reference_lines <- hardcoded_object_reference_lines[
+    !vapply(hardcoded_object_reference_lines, line_in_code_chunk, logical(1), chunks = chunks)
+  ]
+  position_dependent_reference_lines <- which(grepl(
+    "\\b[Tt]his\\s+(table|figure)\\b",
+    lines,
+    perl = TRUE
+  ))
+  position_dependent_reference_lines <- position_dependent_reference_lines[
+    !vapply(position_dependent_reference_lines, line_in_code_chunk, logical(1), chunks = chunks)
   ]
   inline_code_heading_lines <- which(grepl("^#{1,6}\\s+.*`", lines))
   inline_code_heading_lines <- inline_code_heading_lines[
@@ -123,7 +145,21 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
     figure_chunks$options,
     chunk_has_option,
     logical(1),
+    pattern = "fig-cap:"
+  ))
+
+  figure_caption_location_ok <- nrow(figure_chunks) == 0 || all(vapply(
+    figure_chunks$options,
+    chunk_has_option,
+    logical(1),
     pattern = "fig-cap-location:\\s*top"
+  ))
+
+  table_caption_ok <- nrow(table_chunks) == 0 || all(vapply(
+    table_chunks$options,
+    chunk_has_option,
+    logical(1),
+    pattern = "tbl-cap:"
   ))
 
   figure_asides_ok <- nrow(figure_chunks) == 0 || all(vapply(
@@ -147,6 +183,20 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
     pattern = "dependson:"
   ))
 
+  reader_table_lines <- which(grepl("\\breader_table\\s*\\(", lines, perl = TRUE))
+  reader_table_chunk_indices <- vapply(reader_table_lines, chunk_index_for_line, integer(1), chunks = chunks)
+  reader_table_chunks <- chunks[stats::na.omit(unique(reader_table_chunk_indices)), , drop = FALSE]
+  reader_table_chunks_ok <- length(reader_table_lines) == 0 || (
+    all(!is.na(reader_table_chunk_indices)) &&
+      all(grepl("^tbl-", reader_table_chunks$label)) &&
+      all(vapply(reader_table_chunks$options, chunk_has_option, logical(1), pattern = "tbl-cap:"))
+  )
+  reader_table_label_ok <- !any(grepl(
+    "\\blabel\\s*=\\s*[\"']Table\\s+[0-9]+[\"']",
+    lines,
+    perl = TRUE
+  ))
+
   dplyr::bind_rows(
     add_check(
       "html house style enabled",
@@ -155,7 +205,7 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
         yaml_has_line(lines, "^\\s*toc:\\s*true\\s*$"),
         yaml_has_line(lines, "^\\s*toc-title:\\s*[\"']?Contents[\"']?\\s*$"),
         yaml_has_line(lines, "^\\s*toc-depth:\\s*3\\s*$"),
-        yaml_has_line(lines, "^\\s*toc-location:\\s*left\\s*$"),
+        yaml_has_line(lines, "^\\s*toc-location:\\s*right\\s*$"),
         yaml_has_line(lines, "^\\s*number-sections:\\s*true\\s*$"),
         yaml_has_line(lines, "^\\s*number-depth:\\s*3\\s*$"),
         yaml_has_line(lines, "^\\s*light:\\s*cosmo\\s*$"),
@@ -168,7 +218,7 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
         yaml_has_line(lines, "^\\s*link-external-icon:\\s*true\\s*$"),
         yaml_has_line(lines, "^\\s*css:\\s*report-style[.]css\\s*$")
       )),
-      "Use the shared Quarto HTML house style: floating left TOC, numbered sections, light/dark themes, embedded resources, smooth anchors, external-link icon, paged data frames, and report-style.css."
+      "Use the shared Quarto HTML house style: floating right TOC, numbered sections, light/dark themes, embedded resources, smooth anchors, external-link icon, paged data frames, and report-style.css."
     ),
     add_check(
       "no inline code in headings",
@@ -195,9 +245,15 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
       "Quarto should own figure titles/numbers through fig-cap; notes belong in margin asides."
     ),
     add_check(
+      "tables and figures use Quarto captions",
+      "warning",
+      figure_caption_ok && table_caption_ok && reader_table_chunks_ok && reader_table_label_ok,
+      "Reader-facing tables and figures should use Quarto chunk labels and caption options so Quarto owns titles, numbering, and link targets."
+    ),
+    add_check(
       "figure captions placed above figures",
       "warning",
-      figure_caption_ok,
+      figure_caption_location_ok,
       "Each fig-* chunk should include `#| fig-cap-location: top`."
     ),
     add_check(
@@ -207,10 +263,11 @@ validate_report_style <- function(qmd_path, html_path = NULL) {
       "Each fig-* chunk should be followed by a margin aside containing the figure note."
     ),
     add_check(
-      "no hard-coded figure numbers in prose",
+      "object references are Quarto back-references",
       "warning",
-      length(hardcoded_figure_lines) == 0,
-      "Use Quarto cross-references such as `@fig-example` instead of prose like `Figure 1`."
+      length(hardcoded_object_reference_lines) == 0 &&
+        length(position_dependent_reference_lines) == 0,
+      "Reader-facing prose should use Quarto object back-references rather than hand-maintained or position-dependent references."
     ),
     add_check(
       "model chunks cached",

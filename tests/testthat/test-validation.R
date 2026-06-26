@@ -6,11 +6,12 @@ test_that("validate_report_style catches common presentation issues", {
     "---",
     "",
     "Figure 1 is hard-coded.",
+    "Table 1 is also hard-coded.",
+    "This table uses a position-dependent reference.",
     "",
     "## Bad `Heading`",
     "",
     "```{r fig-bad}",
-    "#| fig-cap: \"*Bad plot*\"",
     "# `comment_with_code` is not a rendered heading",
     "plot <- ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt)) +",
     "  ggplot2::geom_point() +",
@@ -24,6 +25,7 @@ test_that("validate_report_style catches common presentation issues", {
     "",
     "```{r bad_table}",
     "knitr::kable(mtcars[1:2, 1:2])",
+    "reader_table(mtcars[1:2, 1:2], label = \"Table 1\")",
     "```"
   ), qmd)
 
@@ -33,9 +35,10 @@ test_that("validate_report_style catches common presentation issues", {
   expect_true(any(checks$check == "no inline code in headings" & !checks$passed))
   expect_true(any(checks$check == "no kable output" & !checks$passed))
   expect_true(any(checks$check == "no baked ggplot figure titles or notes" & !checks$passed))
+  expect_true(any(checks$check == "tables and figures use Quarto captions" & !checks$passed))
   expect_true(any(checks$check == "figure captions placed above figures" & !checks$passed))
   expect_true(any(checks$check == "figure notes in adjacent asides" & !checks$passed))
-  expect_true(any(checks$check == "no hard-coded figure numbers in prose" & !checks$passed))
+  expect_true(any(checks$check == "object references are Quarto back-references" & !checks$passed))
   expect_true(any(checks$check == "model chunks cached" & !checks$passed))
   expect_true(any(checks$check == "display chunks declare dependencies" & !checks$passed))
 })
@@ -50,7 +53,7 @@ test_that("validate_report_style passes a minimal good figure", {
     "    toc: true",
     "    toc-title: \"Contents\"",
     "    toc-depth: 3",
-    "    toc-location: left",
+    "    toc-location: right",
     "    number-sections: true",
     "    number-depth: 3",
     "    theme:",
@@ -70,6 +73,14 @@ test_that("validate_report_style passes a minimal good figure", {
     "# `comment_with_code` is not a rendered heading",
     "x <- 1",
     "```",
+    "",
+    "```{r tbl-good}",
+    "#| tbl-cap: \"*Good table*\"",
+    "#| dependson: data_model",
+    "reader_table(tibble::tibble(value = 1), note = \"Good note.\")",
+    "```",
+    "",
+    "@tbl-good reports a good table.",
     "",
     "```{r fig-good}",
     "#| fig-cap: \"*Good plot*\"",
