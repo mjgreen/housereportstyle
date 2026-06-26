@@ -46,5 +46,5 @@ Imports:
 Suggests:
     testthat (>= 3.0.0)
 Remotes:
-    tmalsburg/scanpath
+    tmalsburg/scanpath/scanpath
 Config/testthat/edition: 3
