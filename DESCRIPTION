@@ -45,4 +45,6 @@ Imports:
     utils
 Suggests:
     testthat (>= 3.0.0)
+Remotes:
+    tmalsburg/scanpath
 Config/testthat/edition: 3
