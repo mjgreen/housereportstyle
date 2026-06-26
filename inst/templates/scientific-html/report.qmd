@@ -1,0 +1,114 @@
+---
+title: "{{TITLE}}"
+date: last-modified
+date-format: "YYYY-MM-DD HH:mm:ss"
+format:
+  html:
+    toc: true
+    toc-title: "Contents"
+    toc-depth: 3
+    toc-location: left
+    number-sections: true
+    number-depth: 3
+    theme:
+      light: cosmo
+      dark: darkly
+    respect-user-color-scheme: true
+    embed-resources: true
+    smooth-scroll: true
+    anchor-sections: true
+    code-fold: true
+    code-summary: "Show R code"
+    df-print: paged
+    link-external-icon: true
+    css: report-style.css
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
+---
+
+```{r setup}
+#| cache: false
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(housereportstyle)
+  library(ggplot2)
+  library(readr)
+  library(tibble)
+})
+
+set.seed(1001)
+
+report_id <- "{{REPORT_ID}}"
+output_dir <- file.path("generated")
+plot_dir <- file.path(output_dir, "plots")
+dir.create(plot_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+## Scope
+
+State the analysis boundary, data source, and the scientific question in plain prose.
+
+## Data Inputs
+
+```{r data_inputs_model}
+#| cache: true
+example_data <- tibble(
+  group = rep(c("condition_a", "condition_b"), each = 5),
+  trial = rep(1:5, times = 2),
+  value = c(4, 5, 6, 6, 7, 3, 4, 4, 5, 6)
+)
+```
+
+```{r data_input_table}
+#| dependson: data_inputs_model
+reader_table(
+  example_data,
+  label = "Table 1",
+  title = "Example data scaffold",
+  note = "Replace this scaffold table with the first reader-facing data provenance table."
+)
+```
+
+Table 1 should explain what the reader needs to know before the first plot or model.
+
+```{r fig-example-summary}
+#| fig-width: 7
+#| fig-height: 4.5
+#| out-width: "100%"
+#| fig-cap: "*Example grouped summary*"
+#| fig-cap-location: top
+#| dependson: data_inputs_model
+example_plot <- example_data |>
+  ggplot(aes(x = trial, y = value, colour = group)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  labs(x = "Trial", y = "Value", colour = "Group") +
+  theme_report(base_size = 11)
+
+save_report_plot(example_plot, "example-summary.png", plot_dir, width = 7, height = 4.5)
+example_plot
+```
+
+::: {.aside}
+_Note._ Replace this aside with a figure note that explains how to read the plot; keep titles and numbering in Quarto.
+:::
+
+@fig-example-summary demonstrates the report's figure grammar: Quarto caption above, image next, note in a margin aside, then interpretive prose.
+
+## Hidden Checks
+
+```{r internal_validation_checks}
+#| include: false
+#| cache: true
+#| dependson:
+#|   - data_inputs_model
+acceptance_checks <- tibble(
+  check = "example input contains rows",
+  passed = nrow(example_data) > 0
+)
+
+write_csv(acceptance_checks, file.path(output_dir, "acceptance_checks.csv"))
+```

@@ -1,0 +1,7 @@
+^.*\\.Rproj$
+^\\.Rproj\\.user$
+^\\.\\.Rcheck$
+^\\.\\.Rcheck/
+^housereportstyle_.*\\.tar\\.gz$
+^housereportstyle\\.Rcheck$
+
